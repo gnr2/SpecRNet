@@ -29,27 +29,31 @@ def get_datasets(
     datasets_paths: List[Union[Path, str]],
     amount_to_use: Tuple[Optional[int], Optional[int]],
 ) -> Tuple[DetectionDataset, DetectionDataset]:
-    
 
-    # datasets_paths[0] -> bonafied
-    # datasets_paths[1] -> fake
+    # Log the paths being used for datasets
+    logging.info(f"Using datasets from paths: {datasets_paths}")
 
-
-    # MAIN
+    # TRAIN on bonafide and spoof data from the same folder
     data_train = DetectionDataset(
-        asvspoof_path=datasets_paths[0], ## Value should be BONAFIED 
+        asvspoof_path=datasets_paths[0],  # Bonafide and Spoof dataset path
+        wavefake_path=datasets_paths[0],  # Also set to the same folder
         subset="train",
-        reduced_number=amount_to_use[0], ## VALUE should be PATHY
-        oversample=True,
+        reduced_number=amount_to_use[0],  # Reduced number for training
+        oversample=False,
     )
 
-    # NEXT LATER
+    # TEST on bonafide and spoof data from the same folder
     data_test = DetectionDataset(
-        asvspoof_path=datasets_paths[0],
+        asvspoof_path=datasets_paths[0],  # Bonafide data
+        wavefake_path=datasets_paths[0],  # Spoof data (same path)
         subset="test",
-        reduced_number=amount_to_use[1],
-        oversample=True,
+        reduced_number=amount_to_use[1],  # Reduced number for testing
+        oversample=False,  # No oversampling during testing
     )
+
+    # Log dataset sizes
+    logging.info(f"Training set size: {len(data_train)}")
+    logging.info(f"Test set size: {len(data_test)}")
 
     return data_train, data_test
 
@@ -83,6 +87,9 @@ def train_nn(
         amount_to_use=amount_to_use,
     )
 
+    # Log the test set size before proceeding with evaluation
+    logging.info(f"Test set size before evaluation: {len(data_test)}")
+    
     current_model = models.get_model(
         model_name=model_name,
         config=model_parameters,

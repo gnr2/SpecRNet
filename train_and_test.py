@@ -8,7 +8,9 @@ import yaml
 import train_models
 import evaluate_models
 from src.commons import set_seed
+from clearml import Task
 
+task = Task.init(project_name = "ThesisADD", task_name = "Training Models - SpecRnet w/ Filipino Dataset")
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
@@ -23,8 +25,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # Updated dataset paths
-    BONAFIDE_DATASET_PATH = "./Bonafide_Dataset/train"
-    FAKE_DATASET_PATH = "./Fake Dataset/train"
+    BONAFIDE_DATASET_PATH = "./dataset/train"
+    FAKE_DATASET_PATH = "./dataset/train"
 
     parser.add_argument(
         "--bonafide_path",
@@ -73,7 +75,7 @@ def parse_args():
         default=default_test_amount,
     )
 
-    default_batch_size = 8
+    default_batch_size = 32
     parser.add_argument(
         "--batch_size",
         "-b",
@@ -141,11 +143,31 @@ if __name__ == "__main__":
     with open(evaluation_config_path, "r") as f:
         config = yaml.safe_load(f)
 
+    #evaluate_models.evaluate_nn(
+        #model_paths=config["checkpoint"].get("path", []),
+        #batch_size=args.batch_size,
+        #datasets_paths=[args.bonafide_path, args.fake_path],  # Use both datasets during evaluation as well
+        #model_config=config["model"],
+        #amount_to_use=args.test_amount,
+        #device=device,
+    #)
+
+    # After training, pass the model_path directly to the evaluation phase
+    #evaluate_models.evaluate_nn(
+        #model_paths=[model_path],  # Pass the trained model path here
+        #batch_size=args.batch_size,
+        #datasets_paths=[args.bonafide_path, args.fake_path],  # Use both datasets during evaluation as well
+        #model_config=config["model"],
+        #amount_to_use=args.test_amount,
+        #device=device,
+#)
     evaluate_models.evaluate_nn(
         model_paths=config["checkpoint"].get("path", []),
         batch_size=args.batch_size,
-        datasets_paths=[args.bonafide_path, args.fake_path],  # Use both datasets during evaluation as well
+        datasets_paths=[args.bonafide_path, args.fake_path],  # Evaluate on both datasets
         model_config=config["model"],
         amount_to_use=args.test_amount,
         device=device,
     )
+
+task.close()

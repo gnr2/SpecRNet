@@ -83,9 +83,10 @@ class DetectionDataset(SimpleAudioFakeDataset):
             #asvspoof_dataset = DeepFakeASVSpoofDataset(asvspoof_path, subset=subset)
             asvspoof_dataset = WatermelonDataset(asvspoof_path, subset=subset)
             datasets.append(asvspoof_dataset)
-
+        logging.info(f"TEST FAKE WAVE_PATH IS: {wavefake_path}")
         if wavefake_path is not None:
             wavefake_dataset = WaveFakeDataset(wavefake_path, subset=subset)
+            #wavefake_dataset = WatermelonDataset(wavefake_path, subset=subset)
             datasets.append(wavefake_dataset)
 
         if fakeavceleb_path is not None:

@@ -13,16 +13,20 @@ from src import metrics, commons
 from src.models import models
 from src.datasets.base_dataset import SimpleAudioFakeDataset
 from src.datasets.in_the_wild_dataset import InTheWildDataset
+from src.datasets.WatermelonDataset import WatermelonDataset
+
 
 
 def get_dataset(
     datasets_paths: List[Union[Path, str]],
     amount_to_use: Optional[int],
 ) -> SimpleAudioFakeDataset:
-    data_val = InTheWildDataset(
-        subset="foo",
+    data_val = WatermelonDataset(
+        subset="val",
         path=datasets_paths[0],
     )
+    logging.info(f"Loaded dataset with {len(data_val)} samples.")  # Debugging line
+
     return data_val
 
 
@@ -32,7 +36,7 @@ def evaluate_nn(
     model_config: Dict,
     device: str,
     amount_to_use: Optional[int] = None,
-    batch_size: int = 8,
+    batch_size: int = 1,
 ):
     logging.info("Loading data...")
     model_name, model_parameters = model_config["name"], model_config["parameters"]
@@ -91,6 +95,11 @@ def evaluate_nn(
             y_pred = torch.concat([y_pred, batch_pred], dim=0)
             y_pred_label = torch.concat([y_pred_label, batch_pred_label], dim=0)
             y = torch.concat([y, batch_y], dim=0)
+    
+    logging.info(
+        f"{model_config}, {model_name}, {datasets_paths}, {model_paths}"
+    )
+
 
     eval_accuracy = (num_correct / num_total) * 100
 
@@ -113,6 +122,7 @@ def evaluate_nn(
     recall_label = f"eval/recall"
     f1_label = f"eval/f1_score"
     auc_label = f"eval/auc"
+
 
     logging.info(
         f"{eer_label}: {eer:.4f}, {accuracy_label}: {eval_accuracy:.4f}, {precision_label}: {precision:.4f}, {recall_label}: {recall:.4f}, {f1_label}: {f1_score:.4f}, {auc_label}: {auc_score:.4f}"
@@ -156,21 +166,23 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # If assigned as None, then it won't be taken into account
-    IN_THE_WILD_DATASET_PATH = "../datasets/release_in_the_wild"
+    # Path to original dataset
+    IN_THE_WILD_DATASET_PATH = "./Bonafide_Dataset/train"
 
     parser.add_argument(
         "--in_the_wild_path", type=str, default=IN_THE_WILD_DATASET_PATH
     )
-
-    default_model_config = "config.yaml"
+    
+    # path to specrnet model config 
+    default_model_config = "./configs/model__specrnet__1727598654.3751512.yaml"
     parser.add_argument(
         "--config",
         help="Model config file path (default: config.yaml)",
         type=str,
         default=default_model_config,
     )
-
-    default_amount = None
+    #./Bonafide_Dataset/train - - - path to specRnet dataset
+    default_amount = 25
     parser.add_argument(
         "--amount",
         "-a",
@@ -181,7 +193,18 @@ def parse_args():
 
     parser.add_argument("--cpu", "-c", help="Force using cpu", action="store_true")
 
+    # default_model_path = "./trained_models/model__specrnet__1727460942.4737604"
+    # parser.add_argument(
+    #     "--weights",
+    #     "-w",
+    #     help="Trained model weights path",
+    #     type=str,
+    #     default=default_model_path,
+    # )
+
     return parser.parse_args()
+
+
 
 
 if __name__ == "__main__":

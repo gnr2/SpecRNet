@@ -6,6 +6,7 @@ It is available here: https://github.com/asvspoof-challenge/2021/blob/main/LA/Ba
 from typing import Dict
 
 import torch.nn as nn
+import torch
 
 from src import frontends
 
@@ -186,24 +187,38 @@ class SpecRNet(nn.Module):
 class FrontendSpecRNet(SpecRNet):
     def __init__(self, input_channels, **kwargs):
         super().__init__(input_channels, **kwargs)
-
         self.device = kwargs['device']
-
         frontend_name = kwargs.get("frontend_algorithm", [])
         self.frontend = frontends.get_frontend(frontend_name)
         print(f"Using {frontend_name} frontend")
+        print(f"First BatchNorm expects {self.first_bn.num_features} features")
 
-    def _compute_frontend(self, x):
-        frontend = self.frontend(x)
-        if frontend.ndim < 4:
-            return frontend.unsqueeze(1)  # (bs, 1, n_lfcc, frames)
-        return frontend # (bs, n, n_lfcc, frames)
+    def _compute_frontend(self, x, return_last_conv=False):
+        # Convert stereo to mono if necessary
+        if x.shape[0] == 2:
+            x = torch.mean(x, dim=0, keepdim=True)
+
+        # Apply frontend processing
+        x = self.frontend(x)
+
+        # Ensure correct dimensions
+        if x.ndim == 3:
+            x = x.unsqueeze(1)  # Add channel dimension
+        elif x.ndim == 5:
+            x = x.squeeze(1)  # Remove extra dimension if 5D
+
+        # Capture the output just before the GRU (last conv output)
+        last_conv_output = x  # or the relevant layer output just before GRU
+
+        if return_last_conv:
+            return x, last_conv_output
+        return x
 
     def forward(self, x):
         x = self._compute_frontend(x)
+        print(f"Shape before embedding: {x.shape}")
         x = self._compute_embedding(x)
         return x
-
 
 if __name__ == "__main__":
     print("Definition of model")
